@@ -6,6 +6,13 @@ __pycache__/
 # C extensions
 *.so
 
+# Data folders (Images Database, YDK Files, Templates, ect.)
+Card Backs/
+Images Database/
+Templates/
+YDK Files/
+Decks/
+
 # Distribution / packaging
 .Python
 build/

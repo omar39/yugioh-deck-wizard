@@ -3,18 +3,19 @@ import re
 
 class Reader:
     deck = dict()
-    def __init__(self, file_name: str):    
+    def __init__(self, file_name: str, out_path = '/'):    
         ##file_name = "Orcust PangChy.ydk"
-        folder_name = file_name.split('.ydk')[0] 
-        path = os.path.normpath(os.getcwd() + '/' + folder_name)
-        print(path)
-        exists = (os.path.exists(path))
-        if not exists:
-            try:
-                os.mkdir(folder_name)
-                print("New Directory Created '{}' ".format(folder_name) )
-            except FileExistsError:
-                print('Directory already exists!')
+        # folder_name = file_name.split('.ydk')[0] 
+
+        # path = os.path.normpath(os.getcwd() + out_path + folder_name)
+        # print(path)
+        # exists = (os.path.exists(path))
+        # if not exists:
+        #     try:
+        #         os.mkdir(folder_name)
+        #         print("New Directory Created '{}' ".format(folder_name) )
+        #     except FileExistsError:
+        #         print('Directory already exists!')
                 
         ydk_deck = open(file_name, "r")
         ydk_deck = re.findall('\d+', str(ydk_deck.readlines()))

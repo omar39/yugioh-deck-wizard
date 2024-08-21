@@ -1,18 +1,17 @@
-import os, sys
 import zipfile
 import xml.dom.minidom
-from YDKReader import Reader
 
 class ODGEditor:
     doc = ""
-    def __init__(self, create_path:str, deck:dict, template_file='Templates/OgTemplate.odg', back_sleev=""):
+    def __init__(self, create_path:str, deck:dict, card_per_page:int, template_file='Templates/9-CARD TEMPLATE.odg', back_sleeve=""):
         """
         Open an ODG file.
         """
         self.create_path = create_path
         self.template_file = template_file
-        self.back_sleev = back_sleev
+        self.back_sleeve = back_sleeve
         self.deck = deck
+        self.card_per_page = card_per_page
         self.m_odg = zipfile.ZipFile(self.template_file)
         self.filelist = self.m_odg.infolist()
         self.content_zipinfo = ""
@@ -57,12 +56,11 @@ class ODGEditor:
         with zipfile.ZipFile(self.create_path + '/new_deck.odg', 'a') as out_doc:
             print("copying cards...")
             for card in self.deck.keys():
-                out_doc.write("./{}/{}".format('Images Database', card+".png"), "{}/{}".format("Pictures", card+".png"))
-            if not self.back_sleev == "": out_doc.write(self.back_sleev, "{}/{}".format("Pictures", self.back_sleev.split('/')[-1]))
+                out_doc.write("{}/{}".format(self.create_path, card+".png"), "{}/{}".format("Pictures", card+".png"))
+            if not self.back_sleeve == "": out_doc.write(self.back_sleeve, "{}/{}".format("Pictures", self.back_sleeve.split('/')[-1]))
             out_doc.close()
     
     def insert_cards(self):
-        #doc = self.get_out_doc()add_cards
         place_holders = self.doc.getElementsByTagName('draw:image')
         print(len(place_holders))
         for card, amount in self.deck.items(): 
@@ -70,15 +68,10 @@ class ODGEditor:
                 curr_placeholder = place_holders.item(0)
                 place_holders.item(0).setAttribute('xlink:href', 'Pictures/{}'.format(card+".png"))
                 place_holders.remove(curr_placeholder)
-        if not self.back_sleev == "":
+        if not self.back_sleeve == "":
             last_index = len(place_holders) - 1
-            for i in range(9):
+            for i in range(self.card_per_page):
                 curr_placeholder = place_holders.item(last_index-i)
-                place_holders.item(last_index-i).setAttribute('xlink:href', 'Pictures/{}'.format(self.back_sleev.split('/')[-1]))
+                place_holders.item(last_index-i).setAttribute('xlink:href', 'Pictures/{}'.format(self.back_sleeve.split('/')[-1]))
                 place_holders.remove(curr_placeholder)
                 
-# deck = Reader('YDK Files/Cyberse strucutre deck.ydk')
-# odg = ODGEditor('Templates/OgTemplate.odg', deck.get_result())
-
-# odg.add_pages(6)
-# odg.add_cards()

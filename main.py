@@ -10,6 +10,7 @@ from gui import Ui_DeckWizard
 
 class Inintializer:
     deckFile = None
+    extraCardsZip = None
     templateFile = None
     cardBackFile = None
     window =  None
@@ -41,6 +42,16 @@ class Inintializer:
                     dir, filter="All Files(*.*)")
         self.deckFile = fname[0]
         self.window.pushButton_deck.setText(self.deckFile.split('/')[-1])
+
+    def getExtraCardsZip(self, dir=None):
+        '''
+        Select a file via a dialog and return the file name.
+        '''
+        if dir is None: dir ='./'
+        fname = QtWidgets.QFileDialog.getOpenFileName(None, "Select external cards file...", 
+                    dir, filter="Zip files(*.zip)")
+        self.extraCardsZip = fname[0] if fname[0] != "" else None
+        self.window.pushButton_external_cards.setText(self.extraCardsZip.split('/')[-1]) if self.extraCardsZip != None else None
         
     def getOutFolder(self, dir=None):
         '''
@@ -74,6 +85,7 @@ class Inintializer:
 
         cardDB = CardDatabse(self.templateFile, 
                              self.deckFile, 
+                             self.extraCardsZip,
                              self.cardBackFile, 
                              card_per_page, bleedVal, 
                              exportPath, lang)
@@ -106,6 +118,8 @@ class Inintializer:
         self.window.pushButton_back.clicked.connect(lambda : self.getBackSleeve())
         self.window.pushButton_startMaking.clicked.connect(lambda: self.processDeck())
         self.window.pushButton_exportPath.clicked.connect(lambda: self.getOutFolder())
+        self.window.pushButton_external_cards.clicked.connect(lambda: self.getExtraCardsZip())
+        # self.window.pushButton_makeReceipt.clicked.connect(lambda: self.)
 
 
     def setupCheckBoxes(self):

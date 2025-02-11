@@ -10,6 +10,7 @@ import numpy as np
 import math
 from YDKReader import Reader
 from ODGEditor import ODGEditor
+from ZipDeck import ZipDeck
 
 class CardDatabse:
     api = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
@@ -19,10 +20,11 @@ class CardDatabse:
 
     number_of_distinct_cards = None
     current_number_count = 1
-    def __init__(self, template_file:str, deck_file:str, back_sleeve:str, card_per_page:int, bleedVal:int, out_folder:str, language:str):
+    def __init__(self, template_file:str, deck_file:str, extra_file:str, back_sleeve:str, card_per_page:int, bleedVal:int, out_folder:str, language:str):
         self.database = self.import_database()
         self.template_file = template_file
         self.deck_file = deck_file
+        self.extra_file = extra_file
         self.back_sleeve = back_sleeve
         self.out_folder = out_folder
         self.card_per_page = card_per_page
@@ -30,7 +32,14 @@ class CardDatabse:
         self.language = language
 
         self.deck = Reader(self.deck_file, out_path=self.out_folder)
-        self.number_of_distinct_cards = len(self.deck.get_result())
+
+        if self.extra_file != None :
+            self.extra_cards = None
+            self.extra_cards = ZipDeck(self.extra_file, self.out_folder)
+        else :
+           self.extra_cards = None
+
+        self.number_of_distinct_cards = len(self.deck.get_result()) + len(self.extra_cards.get_deck()) if self.extra_cards != None else len(self.deck.get_result())
 
     def import_database(self):
         '''
@@ -115,7 +124,7 @@ class CardDatabse:
         upscale_lang = 'upscaled_image_{}'.format(lang)
         # see if a variable is a string and a path
         print(self.database.at[id, upscale_lang])
-        proccessed = (type(self.database.at[id, upscale_lang]) == str) and ('/' in self.database.at[id, upscale_lang])
+        proccessed = id + ".png" in os.listdir(self.database_folder + self.language)
 
         image_path = ""
         if proccessed == False:
@@ -182,6 +191,13 @@ class CardDatabse:
             self.current_number_count += 1
             image.save(self.out_folder + '/' + "{}.png".format(id), "PNG")
 
+        if(self.extra_cards != None):
+            for file_name in self.extra_cards.get_deck():
+                image_path = self.out_folder + '/' + file_name
+                image = Image.open(image_path)
+                if make_border == True : image = self.add_border(image, border_size_mm=self.bleedVal)
+
+
 
         yield ("Creating File..", 100)
         self.create_doc_file()
@@ -202,10 +218,11 @@ class CardDatabse:
         odgEditor = ODGEditor(create_path=self.out_folder,
                               card_per_page=self.card_per_page,
                               deck=self.deck.get_result(),
+                              extra_cards=self.extra_cards,
                               back_sleeve=back_path,
                               template_file=self.template_file)
 
-        page_number = math.ceil( sum ( self.deck.get_result().values() ) / self.card_per_page )
+        page_number = math.ceil( sum ( self.deck.get_result().values() ) + (len(self.extra_cards.get_deck()) if self.extra_cards is not None else 0)  / self.card_per_page )
         odgEditor.add_pages(page_number)
         odgEditor.insert_cards()
         odgEditor.create_new_doc()

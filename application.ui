@@ -64,6 +64,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QLabel" name="label_extra_cards">
+        <property name="text">
+         <string>External Cards [Optional] (.zip)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="label_back">
         <property name="text">
          <string>Select card back (image)</string>
@@ -178,6 +185,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="pushButton_external_cards">
+        <property name="text">
+         <string>Browse</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="pushButton_back">
         <property name="text">
          <string>Browse</string>
@@ -222,7 +236,7 @@
      <x>0</x>
      <y>0</y>
      <width>702</width>
-     <height>24</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>

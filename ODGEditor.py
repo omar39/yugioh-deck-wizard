@@ -1,9 +1,10 @@
 import zipfile
 import xml.dom.minidom
+from ZipDeck import ZipDeck
 
 class ODGEditor:
     doc = ""
-    def __init__(self, create_path:str, deck:dict, card_per_page:int, template_file='Templates/9-CARD TEMPLATE.odg', back_sleeve=""):
+    def __init__(self, create_path:str, deck:dict, extra_cards:ZipDeck, card_per_page:int, template_file='Templates/9-CARD TEMPLATE.odg', back_sleeve=""):
         """
         Open an ODG file.
         """
@@ -11,6 +12,7 @@ class ODGEditor:
         self.template_file = template_file
         self.back_sleeve = back_sleeve
         self.deck = deck
+        self.extra_cards = extra_cards
         self.card_per_page = card_per_page
         self.m_odg = zipfile.ZipFile(self.template_file)
         self.filelist = self.m_odg.infolist()
@@ -57,17 +59,29 @@ class ODGEditor:
             print("copying cards...")
             for card in self.deck.keys():
                 out_doc.write("{}/{}".format(self.create_path, card+".png"), "{}/{}".format("Pictures", card+".png"))
+
+            if self.extra_cards != None:
+                for card in self.extra_cards.get_deck():
+                    out_doc.write("{}/{}".format(self.create_path, card), "{}/{}".format("Pictures", card))
+
             if not self.back_sleeve == "": out_doc.write(self.back_sleeve, "{}/{}".format("Pictures", self.back_sleeve.split('/')[-1]))
             out_doc.close()
     
     def insert_cards(self):
         place_holders = self.doc.getElementsByTagName('draw:image')
         print(len(place_holders))
+
         for card, amount in self.deck.items(): 
             for _ in range(amount):
                 curr_placeholder = place_holders.item(0)
                 place_holders.item(0).setAttribute('xlink:href', 'Pictures/{}'.format(card+".png"))
                 place_holders.remove(curr_placeholder)
+        if self.extra_cards != None:
+            for card in self.extra_cards.get_deck():
+                curr_placeholder = place_holders.item(0)
+                place_holders.item(0).setAttribute('xlink:href', 'Pictures/{}'.format(card))
+                place_holders.remove(curr_placeholder)
+
         if not self.back_sleeve == "":
             last_index = len(place_holders) - 1
             for i in range(self.card_per_page):

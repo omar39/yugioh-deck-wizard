@@ -4,6 +4,9 @@ from ZipDeck import ZipDeck
 
 class ODGEditor:
     doc = ""
+    CONTENT_XML = 'content.xml'
+    NEW_DECK_ODG = '/new_deck.odg'
+
     def __init__(self, create_path:str, deck:dict, extra_cards:ZipDeck, card_per_page:int, template_file='Templates/9-CARD TEMPLATE.odg', back_sleeve=""):
         """
         Open an ODG file.
@@ -18,17 +21,14 @@ class ODGEditor:
         self.filelist = self.m_odg.infolist()
         self.content_zipinfo = ""
         for s in self.filelist:
-            if s.orig_filename == 'content.xml':
+            if s.orig_filename == self.CONTENT_XML:
                 self.content_zipinfo = s
-        ostr = self.m_odg.read('content.xml')
+        ostr = self.m_odg.read(self.CONTENT_XML)
         self.doc = xml.dom.minidom.parseString(ostr)
 
     def get_out_doc(self):
-        """
-        
-        """
-        with zipfile.ZipFile(self.create_path + '/new_deck.odg') as out_doc:
-            ostr = out_doc.read('content.xml')
+        with zipfile.ZipFile(self.create_path + self.NEW_DECK_ODG) as out_doc:
+            ostr = out_doc.read(self.CONTENT_XML)
             doc = xml.dom.minidom.parseString(ostr)
         return doc
 
@@ -45,17 +45,17 @@ class ODGEditor:
         print(str(number_of_pages) + " page(s) have been added.")
 
     def create_new_doc(self):
-        with zipfile.ZipFile(self.create_path + '/new_deck.odg', 'w') as out_doc:
+        with zipfile.ZipFile(self.create_path + self.NEW_DECK_ODG, 'w') as out_doc:
             for s in self.filelist:
                 with self.m_odg.open(s) as infile:
-                    if s.filename == 'content.xml':
+                    if s.filename == self.CONTENT_XML:
                         out_doc.writestr(s.filename, self.doc.toxml())
                     else:
                         out_doc.writestr(s.filename, infile.read())
             out_doc.close()
 
     def copy_card_files(self):
-        with zipfile.ZipFile(self.create_path + '/new_deck.odg', 'a') as out_doc:
+        with zipfile.ZipFile(self.create_path + self.NEW_DECK_ODG, 'a') as out_doc:
             print("copying cards...")
             for card in self.deck.keys():
                 out_doc.write("{}/{}".format(self.create_path, card+".png"), "{}/{}".format("Pictures", card+".png"))
@@ -64,28 +64,30 @@ class ODGEditor:
                 for card in self.extra_cards.get_deck():
                     out_doc.write("{}/{}".format(self.create_path, card), "{}/{}".format("Pictures", card))
 
-            if not self.back_sleeve == "": out_doc.write(self.back_sleeve, "{}/{}".format("Pictures", self.back_sleeve.split('/')[-1]))
+            if self.back_sleeve != "": out_doc.write(self.back_sleeve, "{}/{}".format("Pictures", self.back_sleeve.split('/')[-1]))
             out_doc.close()
     
     def insert_cards(self):
         place_holders = self.doc.getElementsByTagName('draw:image')
         print(len(place_holders))
+        XLINK_HREF = 'xlink:href'
+        PICS_PATH = 'Pictures/'
 
         for card, amount in self.deck.items(): 
             for _ in range(amount):
                 curr_placeholder = place_holders.item(0)
-                place_holders.item(0).setAttribute('xlink:href', 'Pictures/{}'.format(card+".png"))
+                place_holders.item(0).setAttribute(XLINK_HREF, PICS_PATH + '{}'.format(card+".png"))
                 place_holders.remove(curr_placeholder)
         if self.extra_cards != None:
             for card in self.extra_cards.get_deck():
                 curr_placeholder = place_holders.item(0)
-                place_holders.item(0).setAttribute('xlink:href', 'Pictures/{}'.format(card))
+                place_holders.item(0).setAttribute(XLINK_HREF, PICS_PATH + '{}'.format(card))
                 place_holders.remove(curr_placeholder)
 
-        if not self.back_sleeve == "":
+        if self.back_sleeve != "":
             last_index = len(place_holders) - 1
             for i in range(self.card_per_page):
                 curr_placeholder = place_holders.item(last_index-i)
-                place_holders.item(last_index-i).setAttribute('xlink:href', 'Pictures/{}'.format(self.back_sleeve.split('/')[-1]))
+                place_holders.item(last_index-i).setAttribute(XLINK_HREF, PICS_PATH + '{}'.format(self.back_sleeve.split('/')[-1]))
                 place_holders.remove(curr_placeholder)
                 

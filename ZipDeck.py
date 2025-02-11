@@ -18,9 +18,3 @@ class ZipDeck:
                     self.deck.append(file.filename)
     def get_deck(self):
         return self.deck
-
-
-# if __name__ == "__main__":
-#     zipfile = ZipDeck("E:/YUGIOH Deck Wizard/Orders/Working/Ali 698/Decks/Unregistered cards.zip", "E:/YUGIOH Deck Wizard/Orders/Working/Ali 698/Decks")
-#     print("extraction done")
-#     print(zipfile.get_deck())

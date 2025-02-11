@@ -20,7 +20,7 @@ class CardDatabse:
 
     number_of_distinct_cards = None
     current_number_count = 1
-    def __init__(self, template_file:str, deck_file:str, extra_file:str, back_sleeve:str, card_per_page:int, bleedVal:int, out_folder:str, language:str):
+    def __init__(self, template_file:str, deck_file:str, extra_file:str, back_sleeve:str, card_per_page:int, bleed_val:int, out_folder:str, language:str):
         self.database = self.import_database()
         self.template_file = template_file
         self.deck_file = deck_file
@@ -28,10 +28,10 @@ class CardDatabse:
         self.back_sleeve = back_sleeve
         self.out_folder = out_folder
         self.card_per_page = card_per_page
-        self.bleedVal = bleedVal
+        self.bleed_val = bleed_val
         self.language = language
 
-        self.deck = Reader(self.deck_file, out_path=self.out_folder)
+        self.deck = Reader(self.deck_file)
 
         if self.extra_file != None :
             self.extra_cards = None
@@ -67,28 +67,11 @@ class CardDatabse:
             ar_urls = ["https://www.arab-duelists.com/assets/img/cards/{}.jpg".format(i) for i in df.index ]
             df['image_url_ar'] = ar_urls
             saved_images_en = os.listdir('./Images Database/en/')
-            saved_images_ar = os.listdir('./Images Database/ar/')
             for i in saved_images_en:
                 df.at[i.split('.png')[0], 'upscaled_image_en'] = './Images Database/en/' + i
                 df.at[i.split('.png')[0], 'upscaled_image_ar'] = './Images Database/ar/' + i
             df.to_csv('./' + self.database_filename)
             return df
-        
-    # def get_image(self, image_url:str):
-    #     '''
-    #     Create a GET request to fetch the card image. An image is then returned in bytes format.
-    #     '''
-    #     response_success = False
-    #     while response_success == False:
-    #         try:
-    #             image = requests.get(image_url, timeout=10)
-    #             response_success = image.status_code == 200
-    #         except requests.exceptions.ConnectionError:
-    #             print('connection error!\ntrying in 30 seconds..')
-    #             time.sleep(30)            
-    #     if response_success == True: print("image retrieved!")
-    #     image = Image.open(BytesIO(image.content))
-    #     return image
     def get_image(self, id, lang):
         response_success = False
         image_lang = 'image_url_{}'.format(lang)
@@ -171,31 +154,31 @@ class CardDatabse:
         self.number_of_distinct_cards = len(self.deck.get_result())
 
         for i, j in self.deck.get_result().items():
-            id = str(i)
-            if id not in self.database.index: self.database = self.update_database()
+            card_id = str(i)
+            if card_id not in self.database.index: self.database = self.update_database()
             image_lang = "image_url_{}".format(self.language)
-            card_name = self.database.at[id, 'name']
-            card_image = self.database.at[id, image_lang]
+            card_name = self.database.at[card_id, 'name']
+            card_image = self.database.at[card_id, image_lang]
             print({card_name : card_image})
             yield ("Processing \" {} \"".format(card_name), self.current_number_count)
 
             
-            image = self.process_card(id, self.language)
+            image = self.process_card(card_id, self.language)
             
-            if make_border == True : image = self.add_border(image, border_size_mm=self.bleedVal)
+            if make_border == True : image = self.add_border(image, border_size_mm=self.bleed_val)
 
             print('[{} card of {} distinct cards]'.format(
                 self.current_number_count, self.number_of_distinct_cards)
                 )
             
             self.current_number_count += 1
-            image.save(self.out_folder + '/' + "{}.png".format(id), "PNG")
+            image.save(self.out_folder + '/' + "{}.png".format(card_id), "PNG")
 
         if(self.extra_cards != None):
             for file_name in self.extra_cards.get_deck():
                 image_path = self.out_folder + '/' + file_name
                 image = Image.open(image_path)
-                if make_border == True : image = self.add_border(image, border_size_mm=self.bleedVal)
+                if make_border == True : image = self.add_border(image, border_size_mm=self.bleed_val)
 
 
 
@@ -204,7 +187,7 @@ class CardDatabse:
 
         yield("Deck Done!", 0)
         
-    def getDocumentFilePath(self):
+    def get_document_file_path(self):
         return self.out_folder + "/new_deck.odg"
 
     def create_doc_file(self):
@@ -212,10 +195,10 @@ class CardDatabse:
         Create a .odg file placing the file in 'folder_name', 
         adding cards in 'deck' and placing the desired sleeve (optional)
         '''
-        back = self.add_border(Image.open(self.back_sleeve), self.bleedVal)
+        back = self.add_border(Image.open(self.back_sleeve), self.bleed_val)
         back_path = self.out_folder + "/back.png"
         back.save(back_path, "PNG")
-        odgEditor = ODGEditor(create_path=self.out_folder,
+        odg_editor = ODGEditor(create_path=self.out_folder,
                               card_per_page=self.card_per_page,
                               deck=self.deck.get_result(),
                               extra_cards=self.extra_cards,
@@ -223,7 +206,7 @@ class CardDatabse:
                               template_file=self.template_file)
 
         page_number = math.ceil( sum ( self.deck.get_result().values() ) + (len(self.extra_cards.get_deck()) if self.extra_cards is not None else 0)  / self.card_per_page )
-        odgEditor.add_pages(page_number)
-        odgEditor.insert_cards()
-        odgEditor.create_new_doc()
-        odgEditor.copy_card_files()
+        odg_editor.add_pages(page_number)
+        odg_editor.insert_cards()
+        odg_editor.create_new_doc()
+        odg_editor.copy_card_files()

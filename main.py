@@ -9,131 +9,130 @@ from gui import Ui_DeckWizard
 
 
 class Inintializer:
-    deckFile = None
-    extraCardsZip = None
-    templateFile = None
-    cardBackFile = None
-    window =  None
-    out_folder = None
+    _deck_file = None
+    _extra_cards_zip = None
+    _template_file = None
+    _card_back_file = None
+    _window =  None
+    _out_folder = None
 
     def __init__(self, window:Ui_DeckWizard) :
-        self.window = window
-        self.setupCheckBoxes()
-        self.setupButtons()
-        self.setupLineEdit()
-        self.setupComboBox()
+        self._window = window
+        self._setup_check_boxes()
+        self._setup_buttons()
+        self._setup_line_edit()
+        self._setup_combo_box()
 
-    def getTemplateFile(self, dir=None):
+    def _get_template_file(self, selected_dir=None):
         '''
         Select a file via a dialog and return the file name.
         '''
-        if dir is None: dir ='./'
+        if selected_dir is None: selected_dir ='./'
         fname = QtWidgets.QFileDialog.getOpenFileName(None, "Select template file...", 
-                    dir, filter="(*.odg)")
-        self.templateFile = fname[0]
-        self.window.pushButton_selectTemplate.setText(self.templateFile.split('/')[-1])
+                    selected_dir, filter="(*.odg)")
+        self._template_file = fname[0]
+        self._window.pushButton_selectTemplate.setText(self._template_file.split('/')[-1])
 
-    def getDeckFile(self, dir=None):
+    def _get_deck_file(self, selected_dir=None):
         '''
         Select a file via a dialog and return the file name.
         '''
-        if dir is None: dir ='./'
+        if selected_dir is None: selected_dir ='./'
         fname = QtWidgets.QFileDialog.getOpenFileName(None, "Select deck file...", 
-                    dir, filter="All Files(*.*)")
-        self.deckFile = fname[0]
-        self.window.pushButton_deck.setText(self.deckFile.split('/')[-1])
+                    selected_dir, filter="All Files(*.*)")
+        self._deck_file = fname[0]
+        self._window.pushButton_deck.setText(self._deck_file.split('/')[-1])
 
-    def getExtraCardsZip(self, dir=None):
+    def _get_extra_cards_zip(self, selected_dir=None):
         '''
         Select a file via a dialog and return the file name.
         '''
-        if dir is None: dir ='./'
+        if selected_dir is None: selected_dir ='./'
         fname = QtWidgets.QFileDialog.getOpenFileName(None, "Select external cards file...", 
-                    dir, filter="Zip files(*.zip)")
-        self.extraCardsZip = fname[0] if fname[0] != "" else None
-        self.window.pushButton_external_cards.setText(self.extraCardsZip.split('/')[-1]) if self.extraCardsZip != None else None
+                    selected_dir, filter="Zip files(*.zip)")
+        self._extra_cards_zip = fname[0] if fname[0] != "" else None
+        self._window.pushButton_external_cards.setText(self._extra_cards_zip.split('/')[-1]) if self._extra_cards_zip != None else None
         
-    def getOutFolder(self, dir=None):
+    def _get_out_folder(self):
         '''
         Select a file via a dialog and return the file name.
         '''
-        if dir is None: dir ='./'
         fname = QtWidgets.QFileDialog.getExistingDirectory(None, "Select output folder...")
-        self.out_folder = fname
-        self.window.pushButton_exportPath.setText(self.out_folder.split('/')[-1])
+        self._out_folder = fname
+        self._window.pushButton_exportPath.setText(self._out_folder.split('/')[-1])
 
-    def getBackSleeve(self, dir=None):
+    def _get_back_sleeve(self, selected_dir=None):
         '''
         Select a file via a dialog and return the file name.
         '''
-        if dir is None: dir ='./'
+        if selected_dir is None: selected_dir ='./'
         fname = QtWidgets.QFileDialog.getOpenFileName(None, "Select back sleeve file...", 
-                    dir, filter="(*.jpg) ; (*.jpeg) ; (*.png)")
-        self.cardBackFile = fname[0]
-        self.window.pushButton_back.setText(self.cardBackFile.split('/')[-1])
+                    selected_dir, filter="(*.jpg) ; (*.jpeg) ; (*.png)")
+        self._card_back_file = fname[0]
+        self._window.pushButton_back.setText(self._card_back_file.split('/')[-1])
 
-    def processDeck(self):
+    def _process_deck(self):
 
-        self.window.label_stats.setText("Processing cards..")
+        self._window.label_stats.setText("Processing cards..")
 
-        card_per_page = int( self.window.lineEdit_cardPerPage.text() )
-        makeBleed = self.window.checkBox_addBleed.isChecked()
-        bleedVal = int(self.window.lineEdit_bleedAmt.text())
-        exportPath = self.out_folder
-        openFile = self.window.checkBox_openAfterFinish.isChecked()
-        lang = self.window.comboBox.currentText()
+        _card_per_page = int( self._window.lineEdit_cardPerPage.text() )
+        _make_bleed = self._window.checkBox_addBleed.isChecked()
+        _bleed_val = int(self._window.lineEdit_bleedAmt.text())
+        _export_path = self._out_folder
+        _open_file = self._window.checkBox_openAfterFinish.isChecked()
+        _lang = self._window.comboBox.currentText()
 
-        cardDB = CardDatabse(self.templateFile, 
-                             self.deckFile, 
-                             self.extraCardsZip,
-                             self.cardBackFile, 
-                             card_per_page, bleedVal, 
-                             exportPath, lang)
+        _card_db = CardDatabse(self._template_file, 
+                             self._deck_file, 
+                             self._extra_cards_zip,
+                             self._card_back_file, 
+                             _card_per_page, _bleed_val, 
+                             _export_path, _lang)
         
-        targetProgress = cardDB.number_of_distinct_cards
+        _target_progress = _card_db.number_of_distinct_cards
 
-        for currentStats, progressCount in cardDB.process_deck(make_border=makeBleed):
-            self.window.label_stats.setText(currentStats)
-            self.window.progressBar.setValue( int(progressCount / targetProgress * 100) )
+        for _current_stats, _progress_count in _card_db.process_deck(make_border=_make_bleed):
+            self._window.label_stats.setText(_current_stats)
+            self._window.progressBar.setValue( int(_progress_count / _target_progress * 100) )
             
-        if openFile : self.launchFile(cardDB.getDocumentFilePath())
+        if _open_file : self._launch_file(_card_db.get_document_file_path())
         
-    def toggleBleedOption(self):
-        bleedEnabled = self.window.checkBox_addBleed.isChecked()
-        self.window.lineEdit_bleedAmt.setEnabled(bleedEnabled)
+    def _toggle_bleed_option(self):
+        _bleed_enabled = self._window.checkBox_addBleed.isChecked()
+        self._window.lineEdit_bleedAmt.setEnabled(_bleed_enabled)
 
-    def launchFile(self, filePath:str):
+    def _launch_file(self, file_path:str):
         if platform.system() == 'Darwin':       
-            subprocess.call(('open', filePath))
+            subprocess.call(('open', file_path))
         elif platform.system() == 'Windows':        
-            os.startfile(filePath)
+            os.startfile(file_path)
         else:                                   
-            subprocess.call(('xdg-open', filePath))
-    def addLangs(self):
+            subprocess.call(('xdg-open', file_path))
+    def _add_langs(self):
         languages = ['en', 'ar']
-        self.window.comboBox.addItems(languages)
-    def setupButtons(self):
-        self.window.pushButton_selectTemplate.clicked.connect(lambda: self.getTemplateFile())
-        self.window.pushButton_deck.clicked.connect(lambda : self.getDeckFile())
-        self.window.pushButton_back.clicked.connect(lambda : self.getBackSleeve())
-        self.window.pushButton_startMaking.clicked.connect(lambda: self.processDeck())
-        self.window.pushButton_exportPath.clicked.connect(lambda: self.getOutFolder())
-        self.window.pushButton_external_cards.clicked.connect(lambda: self.getExtraCardsZip())
-        # self.window.pushButton_makeReceipt.clicked.connect(lambda: self.)
+        self._window.comboBox.addItems(languages)
+    def _setup_buttons(self):
+        self._window.pushButton_selectTemplate.clicked.connect(lambda: self._get_template_file())
+        self._window.pushButton_deck.clicked.connect(lambda : self._get_deck_file())
+        self._window.pushButton_back.clicked.connect(lambda : self._get_back_sleeve())
+        self._window.pushButton_startMaking.clicked.connect(lambda: self._process_deck())
+        self._window.pushButton_exportPath.clicked.connect(lambda: self._get_out_folder())
+        self._window.pushButton_external_cards.clicked.connect(lambda: self._get_extra_cards_zip())
+        # self._window.pushButton_makeReceipt.clicked.connect(lambda: self.())
 
 
-    def setupCheckBoxes(self):
-        self.window.checkBox_addBleed.clicked.connect(lambda: self.toggleBleedOption())
+    def _setup_check_boxes(self):
+        self._window.checkBox_addBleed.clicked.connect(lambda: self._toggle_bleed_option())
 
-    def setupLineEdit(self):
-        onlyInt = QtGui.QIntValidator()
-        onlyInt.setRange(1, 999)
-        self.window.lineEdit_bleedAmt.setValidator(onlyInt)
-        onlyInt.setRange(1, 999)
-        self.window.lineEdit_cardPerPage.setValidator(onlyInt)
+    def _setup_line_edit(self):
+        only_int = QtGui.QIntValidator()
+        only_int.setRange(1, 999)
+        self._window.lineEdit_bleedAmt.setValidator(only_int)
+        only_int.setRange(1, 999)
+        self._window.lineEdit_cardPerPage.setValidator(only_int)
 
-    def setupComboBox(self):
-        self.addLangs()
+    def _setup_combo_box(self):
+        self._add_langs()
 
     
     

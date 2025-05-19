@@ -12,6 +12,7 @@ Images Database/
 Templates/
 YDK Files/
 Decks/
+*.csv
 
 # Distribution / packaging
 .Python
@@ -119,3 +120,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# vscode
+.vscode/*

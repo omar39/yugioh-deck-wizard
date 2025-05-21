@@ -69,7 +69,7 @@ class CardDatabse:
             writer.writeheader()
         return pd.read_csv(self.database_filename, index_col="id")
 
-    def update_database(self):
+    def update_database(self) -> pd.DataFrame:
         """Update cards database for newer cards."""
         url = self.api
         database_filename = self.database_filename

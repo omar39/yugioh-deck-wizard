@@ -4,10 +4,10 @@ import pandas as pd
 import os
 
 class YugiohReceipt():
-    def __init__(self, deck: Reader, extra_cards: ZipDeck, price_per_card: float, price_per_extra_card: float, output_path:str):
+    def __init__(self, deck: Reader, extra_cards_filename: str, price_per_card: float, price_per_extra_card: float, output_path:str):
         self.database = self.import_database()
         self.deck = Reader(deck) if deck != None else None
-        self.extra_cards = ZipDeck(extra_cards) if extra_cards != None else None
+        self.extra_cards = ZipDeck(extra_cards_filename, output_path)
         self.price_per_card = price_per_card
         self.price_per_extra_card = price_per_extra_card
         self.output_path = output_path

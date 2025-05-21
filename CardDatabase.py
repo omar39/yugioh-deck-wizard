@@ -11,16 +11,20 @@ import math
 from YDKReader import Reader
 from ODGEditor import ODGEditor
 from ZipDeck import ZipDeck
+import csv
 
 class CardDatabse:
     api = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
     database_filename = "database.csv"
     database_folder = "./Images Database/"
+    ENGLISH = 'en'
+    ARABIC = 'ar'
+    ANIME = 'anime'
     database = pd.DataFrame()
 
     number_of_distinct_cards = None
     current_number_count = 1
-    def __init__(self, template_file:str, deck_file:str, extra_file:str, back_sleeve:str, card_per_page:int, bleed_val:int, out_folder:str, language:str):
+    def __init__(self, template_file:str, deck_file:str, extra_file:str, back_sleeve:str, card_per_page:int, bleed_val:int, out_folder:str, format:str):
         self.database = self.import_database()
         self.template_file = template_file
         self.deck_file = deck_file
@@ -29,7 +33,7 @@ class CardDatabse:
         self.out_folder = out_folder
         self.card_per_page = card_per_page
         self.bleed_val = bleed_val
-        self.language = language
+        self.format = format
 
         self.deck = Reader(self.deck_file)
 
@@ -45,33 +49,50 @@ class CardDatabse:
         '''
         Import database. A dataframe object is then returned
         '''
-        database = pd.read_csv(self.database_filename, index_col="id")
-        database.index = database.index.astype(str)
-        return database
+        try :
+            database = pd.read_csv(self.database_filename, index_col="id")
+            database.index = database.index.astype(str)
+            return database
+        except FileNotFoundError:
+            print("Database file not found. Creating it now...")
+            # create the database csv file
+            database = self.create_database_file()           
+            self.update_database()
+            return self.import_database()
     
+    def create_database_file(self):
+        # create new csv file with database name
+        with open(self.database_filename, 'w', newline='') as csvfile:
+            fieldnames = ['id', 'name', 'image_url', 'image_url_en', 'upscaled_image']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+            writer.writeheader()
+        return pd.read_csv(self.database_filename, index_col="id")
+
     def update_database(self):
-        '''
-        Update cards database for newer cards.
-        '''
-        print("Updating Database....")
-        response = requests.get(self.api)
+        """Update cards database for newer cards."""
+        url = self.api
+        database_filename = self.database_filename
+        try:
+            response = requests.get(url, timeout=60)
+        except requests.exceptions.ConnectionError as e:
+            print(f'connection error: {e}. Please check your internet connection')
+            return
         if response.status_code == 200:
-            print("Success")
-            card = response.json()
-            df = pd.json_normalize(card['data'], record_path=['card_images'], meta=['name'])
-            df = df[1:]
-            df['upscaled_image'] = " "
+            data = response.json()
+            df = pd.json_normalize(data['data'], record_path=['card_images'], meta=['name'])
+            df = df.iloc[1:]
+            df['upscaled_image'] = ""
             df = df.set_index('id')
             df.index = df.index.astype(str)
-            df.rename(columns={"image_url" : "image_url_en"}, inplace=True)
-            ar_urls = ["https://www.arab-duelists.com/assets/img/cards/{}.jpg".format(i) for i in df.index ]
-            df['image_url_ar'] = ar_urls
-            saved_images_en = os.listdir('./Images Database/en/')
-            for i in saved_images_en:
-                df.at[i.split('.png')[0], 'upscaled_image_en'] = './Images Database/en/' + i
-                df.at[i.split('.png')[0], 'upscaled_image_ar'] = './Images Database/ar/' + i
-            df.to_csv('./' + self.database_filename)
-            return df
+            df = df.rename(columns={"image_url": "image_url_en"})
+            df["image_url_ar"] = [f"https://www.arab-duelists.com/assets/img/cards/{i}.jpg" for i in df.index]
+            for lang in ["en", "ar"]:
+                saved_images = os.listdir(f"./Images Database/{lang}/")
+                for i in saved_images:
+                    if i.endswith(".png"):
+                        df.at[i.split(".png")[0], f"upscaled_image_{lang}"] = f"./Images Database/{lang}/" + i
+            df.to_csv(database_filename)
     def get_image(self, id, lang):
         response_success = False
         image_lang = 'image_url_{}'.format(lang)
@@ -81,7 +102,7 @@ class CardDatabse:
                 image = requests.get(image_url, timeout=60)
                 response_success = image.status_code == 200
                 if image.status_code == 404:
-                    return self.process_card(id, 'en')
+                    return self.process_card(id, self.ENGLISH)
             except requests.exceptions.ConnectionError:
                 print('connection error!\ntrying in 30 seconds..')
                 time.sleep(30)            
@@ -100,33 +121,42 @@ class CardDatabse:
         
         return result
     
-    def process_card(self, id:str, lang:str):
+    def process_card(self, id:str, format:str):
         '''
         Start processing a card given its id. The image file is then returned.
         '''
-        upscale_lang = 'upscaled_image_{}'.format(lang)
-        # see if a variable is a string and a path
-        print(self.database.at[id, upscale_lang])
-        proccessed = id + ".png" in os.listdir(self.database_folder + self.language)
-
+        upscale_format = 'upscaled_image_{}'.format(format)
         image_path = ""
-        if proccessed == False:
-            print(self.database.at[id, 'name'])
-            print("Image not found.\nProccessing now...")
+        if format == self.ANIME:
+            if id + ".jpg" in os.listdir(self.database_folder + "/" + format):
+                image_path = self.database_folder + self.format + "/" + id + ".jpg"
+                image = Image.open(open(image_path, 'rb'))
 
-            image_path = self.database_folder + self.language + '/' + id + '.png'
-            image = self.get_image(id, lang)
-            
-            if image.size[0] * image.size[1] < 9e5:
-                image = self.upscale_image_local(image)
-            image.save(image_path, 'PNG')
-            
-            self.database.at[id, upscale_lang] = image_path
-            self.database.to_csv("./" + self.database_filename)
+                if image.size[0] * image.size[1] < 3e5:
+                    print("Image is not upscaled, upscaling...")
+                    image = self.upscale_image_local(image)
+                image.save(image_path)
+            else:
+                print("Anime card image not found.\nProccessing english version...")
+                return self.process_card(id, self.ENGLISH)
         else:
-            #get the image directly
-            image_path = str(self.database.at[id, upscale_lang])
-            print("Image found at " + image_path)
+            if id + ".png" not in os.listdir(self.database_folder + "/" + format):
+                print(self.database.at[id, 'name'])
+                print("Image not found.\nProccessing now...")
+
+                image_path = self.database_folder + self.format + '/' + id + '.png'
+                image = self.get_image(id, format)
+                
+                if image.size[0] * image.size[1] < 5e5:
+                    image = self.upscale_image_local(image)
+                image.save(image_path, 'PNG')
+                
+                self.database.at[id, upscale_format] = image_path
+                self.database.to_csv("./" + self.database_filename)
+            else:
+                #get the image directly
+                image_path = self.database_folder + self.format + '/' + id + '.png'
+                print("Image found at " + image_path)
 
         return Image.open(image_path)
     
@@ -150,42 +180,46 @@ class CardDatabse:
         for i in range(1, image_count+1):
             image.save(folder_name + '/' + "{} ({}).png".format(file_name, i), "PNG")
 
-    def process_deck(self, make_border:bool=False):
-        self.number_of_distinct_cards = len(self.deck.get_result())
+    def process_deck(self, add_border: bool = False):
+        distinct_card_count = len(self.deck.get_result())
 
-        for i, j in self.deck.get_result().items():
-            card_id = str(i)
-            if card_id not in self.database.index: self.database = self.update_database()
-            image_lang = "image_url_{}".format(self.language)
-            card_name = self.database.at[card_id, 'name']
-            card_image = self.database.at[card_id, image_lang]
-            print({card_name : card_image})
-            yield ("Processing \" {} \"".format(card_name), self.current_number_count)
+        for card_id, _ in self.deck.get_result().items():
+            card_id_str = str(card_id)
 
-            
-            image = self.process_card(card_id, self.language)
-            
-            if make_border == True : image = self.add_border(image, border_size_mm=self.bleed_val)
+            if self.format != self.ANIME:
+                if card_id_str not in self.database.index:
+                    self.database = self.update_database()
+                    if card_id_str not in self.database.index:
+                        print(f"Card with id {card_id_str} not found in database")
+                        continue
 
-            print('[{} card of {} distinct cards]'.format(
-                self.current_number_count, self.number_of_distinct_cards)
-                )
-            
+                card_name = self.database.at[card_id_str, 'name']
+                yield (f"Processing \"{card_name}\"", self.current_number_count)
+            else:
+                yield (f"Processing \"{card_id_str} - Anime Card\"", self.current_number_count)
+
+            image = self.process_card(card_id_str, self.format)
+
+            if add_border:
+                image = self.add_border(image, border_size_mm=self.bleed_val)
+
+            print(f'[{self.current_number_count} card of {distinct_card_count} distinct cards]')
+
             self.current_number_count += 1
-            image.save(self.out_folder + '/' + "{}.png".format(card_id), "PNG")
+            image.save(f"{self.out_folder}/{card_id_str}.png", "PNG")
 
-        if(self.extra_cards != None):
+        if self.extra_cards:
             for file_name in self.extra_cards.get_deck():
-                image_path = self.out_folder + '/' + file_name
+                image_path = f"{self.out_folder}/{file_name}"
                 image = Image.open(image_path)
-                if make_border == True : image = self.add_border(image, border_size_mm=self.bleed_val)
-
-
+                if add_border:
+                    image = self.add_border(image, border_size_mm=self.bleed_val)
+                    image.save(image_path, "PNG")
 
         yield ("Creating File..", 100)
         self.create_doc_file()
 
-        yield("Deck Done!", 0)
+        yield ("Deck Done!", 0)
         
     def get_document_file_path(self):
         return self.out_folder + "/new_deck.odg"

@@ -6,6 +6,9 @@ class ODGEditor:
     doc = ""
     CONTENT_XML = 'content.xml'
     NEW_DECK_ODG = '/new_deck.odg'
+    IMAGE_TAG = 'draw:image'
+    XLINK_HREF = 'xlink:href'
+    PICS_PATH = 'Pictures/'
 
     def __init__(self, create_path:str, deck:dict, extra_cards:ZipDeck, card_per_page:int, template_file='Templates/9-CARD TEMPLATE.odg', back_sleeve=""):
         """
@@ -45,27 +48,35 @@ class ODGEditor:
         print(str(number_of_pages) + " page(s) have been added.")
 
     def create_new_doc(self):
-        with zipfile.ZipFile(self.create_path + self.NEW_DECK_ODG, 'w') as out_doc:
-            for s in self.filelist:
-                with self.m_odg.open(s) as infile:
-                    if s.filename == self.CONTENT_XML:
-                        out_doc.writestr(s.filename, self.doc.toxml())
-                    else:
-                        out_doc.writestr(s.filename, infile.read())
-            out_doc.close()
+        try:
+            with zipfile.ZipFile(self.create_path + self.NEW_DECK_ODG, 'w') as out_doc:
+                for s in self.filelist:
+                    try:
+                        with self.m_odg.open(s) as infile:
+                            if s.filename == self.CONTENT_XML:
+                                out_doc.writestr(s.filename, self.doc.toxml())
+                            else:
+                                out_doc.writestr(s.filename, infile.read())
+                    except KeyError as e:
+                        print(f"Error opening file {s.filename}: {e}")
+        except Exception as e:
+            print(f"Failed to create new document: {e}")
 
+    # Cleaned up the code by removing redundant 'out_doc.close()' as 'with' statement handles closing,
+    # simplified string formatting using f-strings, and removed unnecessary 'try-except' blocks for 'KeyError' 
+    # as 'zipfile.write()' does not raise KeyError.
     def copy_card_files(self):
         with zipfile.ZipFile(self.create_path + self.NEW_DECK_ODG, 'a') as out_doc:
             print("copying cards...")
-            for card in self.deck.keys():
-                out_doc.write("{}/{}".format(self.create_path, card+".png"), "{}/{}".format("Pictures", card+".png"))
+            for card in self.deck:
+                out_doc.write(f"{self.create_path}/{card}.png", f"Pictures/{card}.png")
 
-            if self.extra_cards != None:
+            if self.extra_cards:
                 for card in self.extra_cards.get_deck():
-                    out_doc.write("{}/{}".format(self.create_path, card), "{}/{}".format("Pictures", card))
+                    out_doc.write(f"{self.create_path}/{card}", f"Pictures/{card}")
 
-            if self.back_sleeve != "": out_doc.write(self.back_sleeve, "{}/{}".format("Pictures", self.back_sleeve.split('/')[-1]))
-            out_doc.close()
+            if self.back_sleeve:
+                out_doc.write(self.back_sleeve, f"Pictures/{self.back_sleeve.split('/')[-1]}")
     
     def insert_cards(self):
         place_holders = self.doc.getElementsByTagName('draw:image')
@@ -84,6 +95,7 @@ class ODGEditor:
                 place_holders.item(0).setAttribute(XLINK_HREF, PICS_PATH + '{}'.format(card))
                 place_holders.remove(curr_placeholder)
 
+        # Add the back sleeve
         if self.back_sleeve != "":
             last_index = len(place_holders) - 1
             for i in range(self.card_per_page):

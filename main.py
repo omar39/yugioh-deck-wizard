@@ -1,10 +1,10 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtGui, QtWidgets
 import sys
 
 import subprocess, platform, os
 
-from YDKReader import Reader
 from CardDatabase import CardDatabse
+from ReceiptGenerator import YugiohReceipt
 from gui import Ui_DeckWizard
 
 
@@ -71,7 +71,15 @@ class Inintializer:
         self._card_back_file = fname[0]
         self._window.pushButton_back.setText(self._card_back_file.split('/')[-1])
 
+    def _check_for_inputs(self):
+        if (self._deck_file != None or self._extra_cards_zip != None) \
+            and self._template_file != None and self._card_back_file != None and self._out_folder != None :
+            return True
+        return False
     def _process_deck(self):
+
+        if not self._check_for_inputs():
+            return
 
         self._window.label_stats.setText("Processing cards..")
 
@@ -91,7 +99,7 @@ class Inintializer:
         
         _target_progress = _card_db.number_of_distinct_cards
 
-        for _current_stats, _progress_count in _card_db.process_deck(make_border=_make_bleed):
+        for _current_stats, _progress_count in _card_db.process_deck(add_border=_make_bleed):
             self._window.label_stats.setText(_current_stats)
             self._window.progressBar.setValue( int(_progress_count / _target_progress * 100) )
             
@@ -109,8 +117,14 @@ class Inintializer:
         else:                                   
             subprocess.call(('xdg-open', file_path))
     def _add_langs(self):
-        languages = ['en', 'ar']
+        languages = ['en', 'ar', 'anime']
         self._window.comboBox.addItems(languages)
+    def _make_receipt(self):
+        if not self._check_for_inputs():
+            return
+        receipt = YugiohReceipt(self._deck_file, self._extra_cards_zip, 1.5, 2, self._out_folder)
+        output_file = receipt.generate_receipt()
+        self._launch_file(output_file)
     def _setup_buttons(self):
         self._window.pushButton_selectTemplate.clicked.connect(lambda: self._get_template_file())
         self._window.pushButton_deck.clicked.connect(lambda : self._get_deck_file())
@@ -118,7 +132,7 @@ class Inintializer:
         self._window.pushButton_startMaking.clicked.connect(lambda: self._process_deck())
         self._window.pushButton_exportPath.clicked.connect(lambda: self._get_out_folder())
         self._window.pushButton_external_cards.clicked.connect(lambda: self._get_extra_cards_zip())
-        # self._window.pushButton_makeReceipt.clicked.connect(lambda: self.())
+        self._window.pushButton_makeReceipt.clicked.connect(lambda: self._make_receipt())
 
 
     def _setup_check_boxes(self):

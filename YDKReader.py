@@ -1,11 +1,19 @@
 import re
 
 class Reader:
-    deck = dict()
     def __init__(self, file_name: str):
-                
-        ydk_deck = open(file_name, "r")
-        ydk_deck = re.findall('\d+', str(ydk_deck.readlines()))
+        self.deck = self._process_file(file_name)
+
+    def get_result(self):
+        return self.deck if self.deck != None else dict()
+
+    def _process_file(self, file_name: str):
+        try:
+            with open(file_name, "r") as f:
+                ydk_deck = re.findall('\\d+', ''.join(f.readlines()))
+        except FileNotFoundError:
+            print(f"File {file_name} not found.")
+            return None
 
         deck = dict()
 
@@ -14,7 +22,4 @@ class Reader:
                 deck[card] = 0
             deck[card] += 1
 
-        self.deck = deck
-
-    def get_result(self):
-        return self.deck
+        return deck

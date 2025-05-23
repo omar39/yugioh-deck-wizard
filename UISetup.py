@@ -23,6 +23,8 @@ class UISetup:
         self._setup_line_edit()
         self._setup_combo_box()
 
+    def _toggle_in_app_interaction(self, enabled: bool):
+        self._window.centralwidget.setEnabled(enabled)  
     def _get_template_file(self, selected_dir=None):
         '''
         Select a file via a dialog and return the file name.
@@ -98,11 +100,13 @@ class UISetup:
         self._deck_processor = DeckProcessor(_card_db, _make_bleed)
         self._deck_processor.progress.connect(lambda progress, stats: self._yield_deck_progress(stats, progress))
         self._deck_processor.finished.connect(lambda status_code, message: self._deck_process_finished(status_code, _card_db.get_document_file_path()))
+        self._toggle_in_app_interaction(False)
         self._deck_processor.start()
 
     def _deck_process_finished(self, status_code:int, deck_file:str):
         self._deck_processor.terminate()
         self._deck_processor = None
+        self._toggle_in_app_interaction(True)
         if status_code == FinishStatus.FAILED:
             self._display_message("Failed to process deck")
         else :

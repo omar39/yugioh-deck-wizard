@@ -69,7 +69,7 @@ class CardDatabse:
             writer.writeheader()
         return pd.read_csv(self.database_filename, index_col="id")
 
-    def update_database(self) -> pd.DataFrame:
+    def update_database(self):
         """Update cards database for newer cards."""
         url = self.api
         database_filename = self.database_filename
@@ -188,7 +188,7 @@ class CardDatabse:
 
             if self.format != self.ANIME:
                 if card_id_str not in self.database.index:
-                    self.database = self.update_database()
+                    self.update_database()
                     if card_id_str not in self.database.index:
                         print(f"Card with id {card_id_str} not found in database")
                         continue

@@ -188,7 +188,7 @@ class CardDatabse:
 
             if self.format != self.ANIME:
                 if card_id_str not in self.database.index:
-                    # self.update_database()
+                    self.update_database()
                     if card_id_str not in self.database.index:
                         print(f"Card with id {card_id_str} not found in database")
                         yield (f"Card with id {card_id_str} not found in database", self.current_number_count)

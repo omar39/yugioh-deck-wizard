@@ -7,7 +7,7 @@ class YugiohReceipt():
     def __init__(self, deck: Reader, extra_cards_filename: str, price_per_card: float, price_per_extra_card: float, output_path:str):
         self.database = self.import_database()
         self.deck = Reader(deck) if deck != None else None
-        self.extra_cards = ZipDeck(extra_cards_filename, output_path)
+        self.extra_cards = ZipDeck(extra_cards_filename, output_path) if extra_cards_filename != None else None
         self.price_per_card = price_per_card
         self.price_per_extra_card = price_per_extra_card
         self.output_path = output_path
@@ -20,18 +20,7 @@ class YugiohReceipt():
         database_filename = os.getcwd() + '/database.csv'
         database = pd.read_csv(database_filename, index_col="id")
         database.index = database.index.astype(str)
-        #database.head()
         return database
-    
-    # def gui_fname(self, dir=None):
-    #     '''
-    #     Select a file via a dialog and return the file name.
-    #     '''
-    #     if dir is None: dir ='./'
-    #     fname = QFileDialog.getOpenFileName(None, "Select data file...", 
-    #                 dir, filter="All files (*);; SM Files (*.sm)")
-    #     return fname[0]
-    
 
     def generate_receipt(self):
         cards = dict()
@@ -40,12 +29,13 @@ class YugiohReceipt():
         total_cards = normal_cards_number + extra_cards_number
         
         print('Making the receipt....')
-        for id, count in self.deck.get_result().items():
-            card_name = self.database.at[id, 'name']
-            if cards.get(card_name) == None:
-                cards[card_name] = 0
-            cards[card_name] += count
-        cards = dict(sorted(cards.items(), key= lambda x:x[1], reverse=True))
+        if self.deck is not None:
+            for id, count in self.deck.get_result().items():
+                card_name = self.database.at[id, 'name'] if id in self.database.index else 'Unknown Card'
+                if card_name not in cards:
+                    cards[card_name] = 0
+                cards[card_name] += count
+            cards = dict(sorted(cards.items(), key=lambda x: x[1], reverse=True))
         # create text file to populate the receipt data in
         with open(self.output_path + '/' + self.RECEIPT_FILE, 'w') as f:
             f.write('=== \t\t========= \n')
@@ -57,7 +47,3 @@ class YugiohReceipt():
             f.write('\n\nTotal number of cards: \t{}\nCheck : \t\t {} LE'.format(total_cards, (extra_cards_number * self.price_per_extra_card) + (normal_cards_number * self.price_per_card) ))
         print("Receipt created!")
         return self.output_path + '/' + self.RECEIPT_FILE
-# recipt = YugiohRecipt()
-# records = recipt.generate_recipt()
-# for name, qty in records.items():
-#     print (str(name) + '\t' + str(qty))

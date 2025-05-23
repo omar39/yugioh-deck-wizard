@@ -217,15 +217,24 @@ class CardDatabse:
                 if add_border:
                     image = self.add_border(image, border_size_mm=self.bleed_val)
                     image.save(image_path, "PNG")
-        #remove the missing cards
+        # remove the missing cards
         for card_id in missing_cards:
             del self.deck.get_result()[card_id]
 
         yield ("Creating File..", 100)
         self.create_doc_file()
 
+        # remove cards from folder
+        self.remove_cards_images()
+
         yield ("Deck Done!", 0)
-        
+
+    def remove_cards_images(self):
+        files = os.listdir(self.out_folder)
+        for file in files:
+            if file.endswith(".png"):
+                os.remove(self.out_folder + "/" + file)
+
     def get_document_file_path(self):
         return self.out_folder + "/new_deck.odg"
 

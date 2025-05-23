@@ -1,5 +1,6 @@
 import zipfile
 import xml.dom.minidom
+import os
 from ZipDeck import ZipDeck
 
 class ODGEditor:
@@ -69,7 +70,8 @@ class ODGEditor:
         with zipfile.ZipFile(self.create_path + self.NEW_DECK_ODG, 'a') as out_doc:
             print("copying cards...")
             for card in self.deck:
-                out_doc.write(f"{self.create_path}/{card}.png", f"Pictures/{card}.png")
+                if os.path.exists(f"{self.create_path}/{card}.png"):
+                    out_doc.write(f"{self.create_path}/{card}.png", f"Pictures/{card}.png")
 
             if self.extra_cards:
                 for card in self.extra_cards.get_deck():

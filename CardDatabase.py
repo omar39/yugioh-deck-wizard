@@ -182,15 +182,17 @@ class CardDatabse:
 
     def process_deck(self, add_border: bool = False):
         distinct_card_count = len(self.deck.get_result())
-
+        missing_cards = []
         for card_id, _ in self.deck.get_result().items():
             card_id_str = str(card_id)
 
             if self.format != self.ANIME:
                 if card_id_str not in self.database.index:
-                    self.update_database()
+                    # self.update_database()
                     if card_id_str not in self.database.index:
                         print(f"Card with id {card_id_str} not found in database")
+                        yield (f"Card with id {card_id_str} not found in database", self.current_number_count)
+                        missing_cards.append(card_id_str)
                         continue
 
                 card_name = self.database.at[card_id_str, 'name']
@@ -215,6 +217,9 @@ class CardDatabse:
                 if add_border:
                     image = self.add_border(image, border_size_mm=self.bleed_val)
                     image.save(image_path, "PNG")
+        #remove the missing cards
+        for card_id in missing_cards:
+            del self.deck.get_result()[card_id]
 
         yield ("Creating File..", 100)
         self.create_doc_file()

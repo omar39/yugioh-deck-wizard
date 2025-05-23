@@ -6,6 +6,8 @@ class Reader:
 
     def get_result(self):
         return self.deck if self.deck != None else dict()
+    def remove_card(self, card_id: str):
+        self.deck.pop(card_id)
 
     def _process_file(self, file_name: str):
         try:

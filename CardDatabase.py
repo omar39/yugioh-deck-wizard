@@ -2,7 +2,7 @@ import pandas as pd
 import requests
 import os
 from io import BytesIO
-from ISR.models import RDN;
+from SuperResolution import SuperResolution
 import numpy as np
 from PIL import Image
 import time
@@ -110,16 +110,14 @@ class CardDatabse:
         image = Image.open(BytesIO(image.content))
         return image
     
-    def upscale_image_local(self, image:Image):
+    def upscale_image_local(self, image_path:str) -> bool:
         '''
         Upscale a given image url using RDN Super Resolution neural network. The image file path is then returned.
         '''    
-        lr_img = np.array(image)
-        rdn = RDN(weights='noise-cancel')
-        sr_image = rdn.predict(lr_img, by_patch_of_size=50);
-        result = Image.fromarray(sr_image)
+        sr = SuperResolution(image_path)
+        operation_status = sr.srmodel(image_path)
         
-        return result
+        return operation_status
     
     def process_card(self, id:str, format:str):
         '''
@@ -134,8 +132,7 @@ class CardDatabse:
 
                 if image.size[0] * image.size[1] < 3e5:
                     print("Image is not upscaled, upscaling...")
-                    image = self.upscale_image_local(image)
-                image.save(image_path)
+                    self.upscale_image_local(image_path)
             else:
                 print("Anime card image not found.\nProccessing english version...")
                 return self.process_card(id, self.ENGLISH)
@@ -148,7 +145,7 @@ class CardDatabse:
                 image = self.get_image(id, format)
                 
                 if image.size[0] * image.size[1] < 5e5:
-                    image = self.upscale_image_local(image)
+                    self.upscale_image_local(image_path)
                 image.save(image_path, 'PNG')
                 
                 self.database.at[id, upscale_format] = image_path

@@ -70,8 +70,8 @@ class ODGEditor:
         with zipfile.ZipFile(self.create_path + self.NEW_DECK_ODG, 'a') as out_doc:
             print("copying cards...")
             for card in self.deck:
-                if os.path.exists(f"{self.create_path}/{card}.png"):
-                    out_doc.write(f"{self.create_path}/{card}.png", f"Pictures/{card}.png")
+                if os.path.exists(f"{self.create_path}/{card}.jpg"):
+                    out_doc.write(f"{self.create_path}/{card}.jpg", f"Pictures/{card}.jpg")
 
             if self.extra_cards:
                 for card in self.extra_cards.get_deck():
@@ -89,7 +89,7 @@ class ODGEditor:
         for card, amount in self.deck.items(): 
             for _ in range(amount):
                 curr_placeholder = place_holders.item(0)
-                place_holders.item(0).setAttribute(XLINK_HREF, PICS_PATH + '{}'.format(card+".png"))
+                place_holders.item(0).setAttribute(XLINK_HREF, PICS_PATH + '{}'.format(card+".jpg"))
                 place_holders.remove(curr_placeholder)
         if self.extra_cards != None:
             for card in self.extra_cards.get_deck():

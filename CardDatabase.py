@@ -90,8 +90,8 @@ class CardDatabse:
             for lang in ["en", "ar"]:
                 saved_images = os.listdir(f"./Images Database/{lang}/")
                 for i in saved_images:
-                    if i.endswith(".png"):
-                        df.at[i.split(".png")[0], f"upscaled_image_{lang}"] = f"./Images Database/{lang}/" + i
+                    if i.endswith(".jpg"):
+                        df.at[i.split(".jpg")[0], f"upscaled_image_{lang}"] = f"./Images Database/{lang}/" + i
             df.to_csv(database_filename)
     def get_image(self, id, lang):
         response_success = False
@@ -135,22 +135,23 @@ class CardDatabse:
                 print("Anime card image not found.\nProccessing english version...")
                 return self.process_card(id, self.ENGLISH)
         else:
-            if id + ".png" not in os.listdir(self.database_folder + "/" + format):
+            if id + ".jpg" not in os.listdir(self.database_folder + "/" + format):
                 print(self.database.at[id, 'name'])
                 print("Image not found.\nProccessing now...")
 
-                image_path = self.database_folder + self.format + '/' + id + '.png'
+                image_path = self.database_folder + self.format + '/' + id + '.jpg'
                 image = self.get_image(id, format)
                 
                 if image.size[0] * image.size[1] < 5e5:
                     self.upscale_image_local(image_path)
-                image.save(image_path, 'PNG')
+                image = image.convert('RGB')
+                image.save(image_path, 'JPEG')
                 
                 self.database.at[id, upscale_format] = image_path
                 self.database.to_csv("./" + self.database_filename)
             else:
                 #get the image directly
-                image_path = self.database_folder + self.format + '/' + id + '.png'
+                image_path = self.database_folder + self.format + '/' + id + '.jpg'
                 print("Image found at " + image_path)
 
         return Image.open(image_path)
@@ -173,7 +174,8 @@ class CardDatabse:
     
     def save_image(self, image:Image, folder_name:str, image_count:int, file_name:str):
         for i in range(1, image_count+1):
-            image.save(folder_name + '/' + "{} ({}).png".format(file_name, i), "PNG")
+            image = image.convert('RGB')
+            image.save(folder_name + '/' + "{} ({}).jpg".format(file_name, i), "JPEG")
 
     def process_deck(self, add_border: bool = False):
         distinct_card_count = len(self.deck.get_result())
@@ -203,7 +205,8 @@ class CardDatabse:
             print(f'[{self.current_number_count} card of {distinct_card_count} distinct cards]')
 
             self.current_number_count += 1
-            image.save(f"{self.out_folder}/{card_id_str}.png", "PNG")
+            image = image.convert('RGB')
+            image.save(f"{self.out_folder}/{card_id_str}.jpg", "JPEG")
 
         if self.extra_cards:
             for file_name in self.extra_cards.get_deck():
@@ -211,7 +214,8 @@ class CardDatabse:
                 image = Image.open(image_path)
                 if add_border:
                     image = self.add_border(image, border_size_mm=self.bleed_val)
-                    image.save(image_path, "PNG")
+                    image = image.convert('RGB')
+                    image.save(image_path, "JPEG")
         # remove the missing cards
         for card_id in missing_cards:
             del self.deck.get_result()[card_id]
@@ -227,7 +231,7 @@ class CardDatabse:
     def remove_cards_images(self):
         files = os.listdir(self.out_folder)
         for file in files:
-            if file.endswith(".png"):
+            if file.endswith(".jpg"):
                 os.remove(self.out_folder + "/" + file)
 
     def get_document_file_path(self):
@@ -239,8 +243,9 @@ class CardDatabse:
         adding cards in 'deck' and placing the desired sleeve (optional)
         '''
         back = self.add_border(Image.open(self.back_sleeve), self.bleed_val)
-        back_path = self.out_folder + "/back.png"
-        back.save(back_path, "PNG")
+        back_path = self.out_folder + "/back.jpg"
+        back = back.convert('RGB')
+        back.save(back_path, "JPEG")
         odg_editor = ODGEditor(create_path=self.out_folder,
                               card_per_page=self.card_per_page,
                               deck=self.deck.get_result(),

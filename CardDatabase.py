@@ -110,14 +110,12 @@ class CardDatabse:
         image = Image.open(BytesIO(image.content))
         return image
     
-    def upscale_image_local(self, image_path:str) -> bool:
+    def upscale_image_local(self, image_path:str):
         '''
         Upscale a given image url using RDN Super Resolution neural network. The image file path is then returned.
         '''    
-        sr = SuperResolution(image_path)
-        operation_status = sr.srmodel(image_path)
-        
-        return operation_status
+        sr = SuperResolution()
+        sr.upscale_image(image_path, image_path)
     
     def process_card(self, id:str, format:str):
         '''

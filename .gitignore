@@ -12,6 +12,7 @@ Images Database/
 Templates/
 YDK Files/
 Decks/
+small cards/
 *.csv
 
 # Pytorch

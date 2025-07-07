@@ -209,13 +209,8 @@ class CardDatabse:
             image.save(f"{self.out_folder}/{card_id_str}.jpg", "JPEG")
 
         if self.extra_cards:
-            for file_name in self.extra_cards.get_deck():
-                image_path = f"{self.out_folder}/{file_name}"
-                image = Image.open(image_path)
-                if add_border:
-                    image = self.add_border(image, border_size_mm=self.bleed_val)
-                    image = image.convert('RGB')
-                    image.save(image_path, "JPEG")
+            self.proccess_extra_cards(add_border=add_border)
+
         # remove the missing cards
         for card_id in missing_cards:
             del self.deck.get_result()[card_id]
@@ -227,6 +222,15 @@ class CardDatabse:
         self.remove_cards_images()
 
         yield ("Deck Done!", 0)
+    
+    def proccess_extra_cards(self, add_border: bool):
+        for file_name in self.extra_cards.get_deck():
+                image_path = f"{self.out_folder}/{file_name}"
+                image = Image.open(image_path)
+                if add_border:
+                    image = self.add_border(image, border_size_mm=self.bleed_val)
+                    image = image.convert('RGB')
+                    image.save(image_path, "JPEG")
 
     def remove_cards_images(self):
         files = os.listdir(self.out_folder)

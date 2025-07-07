@@ -125,7 +125,10 @@ class UISetup:
         if platform.system() == 'Darwin':       
             subprocess.call(('open', file_path))
         elif platform.system() == 'Windows':        
-            os.startfile(file_path)
+            try:
+                os.startfile(file_path)
+            except OSError:
+                subprocess.call(['explorer', '/select,', file_path.replace('/', '\\')])
         else:                                   
             subprocess.call(('xdg-open', file_path))
     def _add_langs(self):

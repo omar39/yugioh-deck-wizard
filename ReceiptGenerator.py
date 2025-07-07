@@ -37,7 +37,7 @@ class YugiohReceipt():
                 cards[card_name] += count
             cards = dict(sorted(cards.items(), key=lambda x: x[1], reverse=True))
         # create text file to populate the receipt data in
-        with open(self.output_path + '/' + self.RECEIPT_FILE, 'w') as f:
+        with open(self.output_path + '/' + self.RECEIPT_FILE, 'w', encoding='utf-8') as f:
             f.write('=== \t\t========= \n')
             f.write("Qty \t\tCard Name \n")
             f.write('=== \t\t========= \n')

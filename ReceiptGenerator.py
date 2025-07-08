@@ -2,6 +2,7 @@ from YDKReader import Reader
 from ZipDeck import ZipDeck
 import pandas as pd
 import os
+from CardPricing import CardPricing
 
 class YugiohReceipt():
     def __init__(self, deck: Reader, extra_cards_filename: str, price_per_card: float, price_per_extra_card: float, output_path:str):
@@ -24,6 +25,7 @@ class YugiohReceipt():
 
     def generate_receipt(self):
         cards = dict()
+        card_pricing = CardPricing()
         extra_cards_number = len(self.extra_cards.get_deck()) if self.extra_cards != None else 0
         normal_cards_number = sum(self.deck.get_result().values()) if self.deck != None else 0
         total_cards = normal_cards_number + extra_cards_number
@@ -44,6 +46,9 @@ class YugiohReceipt():
             for name, qty in cards.items():
                 f.write('{} x \t\t{} \n'.format(str(qty), name))
             f.write('\n\nCustom cards: \t{}'.format(extra_cards_number))
-            f.write('\n\nTotal number of cards: \t{}\nCheck : \t\t {} LE'.format(total_cards, (extra_cards_number * self.price_per_extra_card) + (normal_cards_number * self.price_per_card) ))
+            f.write('\n\nTotal number of cards: \t{}\nCheck : \t\t {} LE'.format(
+                total_cards, 
+                card_pricing.get_price_range(CardPricing.NORMAL, normal_cards_number)
+                  + card_pricing.get_price_range(CardPricing.CUSTOM, extra_cards_number) ))
         print("Receipt created!")
         return self.output_path + '/' + self.RECEIPT_FILE

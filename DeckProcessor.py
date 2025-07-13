@@ -1,10 +1,12 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 from CardDatabase import CardDatabse
+from logger import Logger
 
 class FinishStatus:
     SUCCESS = 0
     FAILED = 1
 class DeckProcessor(QThread):
+    logger = Logger()
     progress = pyqtSignal(int, str)
     finished = pyqtSignal(int, str)
     def __init__(self, _card_db:CardDatabse, add_boarder:bool):
@@ -21,5 +23,5 @@ class DeckProcessor(QThread):
             self._process_deck()
             self.finished.emit(FinishStatus.SUCCESS, "Done!")
         except Exception as e:
-            print(e)
+            self.logger.error(e, exc_info=True)
             self.finished.emit(FinishStatus.FAILED, "error")

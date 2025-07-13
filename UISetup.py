@@ -108,7 +108,7 @@ class UISetup:
         self._deck_processor = None
         self._toggle_in_app_interaction(True)
         if status_code == FinishStatus.FAILED:
-            self._display_message("Failed to process deck")
+            self._display_message("Failed. Check logs for more info.")
         else :
             self._display_message("Successfully processed deck")
             _open_file = self._window.checkBox_openAfterFinish.isChecked()

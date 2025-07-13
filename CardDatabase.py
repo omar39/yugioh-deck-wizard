@@ -12,6 +12,7 @@ from YDKReader import Reader
 from ODGEditor import ODGEditor
 from ZipDeck import ZipDeck
 import csv
+from logger import Logger
 
 class CardDatabse:
     api = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
@@ -21,6 +22,7 @@ class CardDatabse:
     ARABIC = 'ar'
     ANIME = 'anime'
     database = pd.DataFrame()
+    logger = Logger()
 
     number_of_distinct_cards = None
     current_number_count = 1
@@ -54,7 +56,7 @@ class CardDatabse:
             database.index = database.index.astype(str)
             return database
         except FileNotFoundError:
-            print("Database file not found. Creating it now...")
+            self.logger.info("Database file not found. Creating it now...")
             # create the database csv file
             database = self.create_database_file()           
             self.update_database()
@@ -76,7 +78,7 @@ class CardDatabse:
         try:
             response = requests.get(url, timeout=60)
         except requests.exceptions.ConnectionError as e:
-            print(f'connection error: {e}. Please check your internet connection')
+            self.logger.error(f'connection error: {e}. Please check your internet connection')
             return
         if response.status_code == 200:
             data = response.json()
@@ -104,9 +106,10 @@ class CardDatabse:
                 if image.status_code == 404:
                     return self.process_card(id, self.ENGLISH)
             except requests.exceptions.ConnectionError:
-                print('connection error!\ntrying in 30 seconds..')
+                self.logger.error('connection error!\ntrying in 30 seconds..')
                 time.sleep(30)            
-        if response_success == True: print("image retrieved!")
+        if response_success == True: 
+            self.logger.info("image retrieved!")
         image = Image.open(BytesIO(image.content))
         return image
     
@@ -129,15 +132,15 @@ class CardDatabse:
                 image = Image.open(open(image_path, 'rb'))
 
                 if image.size[0] * image.size[1] < 3e5:
-                    print("Image is not upscaled, upscaling...")
+                    self.logger.info("Image is not upscaled, upscaling...")
                     self.upscale_image_local(image_path)
             else:
-                print("Anime card image not found.\nProccessing english version...")
+                self.logger.info("Anime card image not found.\nProccessing english version...")
                 return self.process_card(id, self.ENGLISH)
         else:
             if id + ".jpg" not in os.listdir(self.database_folder + "/" + format):
-                print(self.database.at[id, 'name'])
-                print("Image not found.\nProccessing now...")
+                self.logger.info(self.database.at[id, 'name'])
+                self.logger.info(f"Card of id {id} not found.\nProccessing now...")
 
                 image_path = self.database_folder + self.format + '/' + id + '.jpg'
                 image = self.get_image(id, format)
@@ -152,7 +155,7 @@ class CardDatabse:
             else:
                 #get the image directly
                 image_path = self.database_folder + self.format + '/' + id + '.jpg'
-                print("Image found at " + image_path)
+                self.logger.info("Image found at " + image_path)
 
         return Image.open(image_path)
     
@@ -178,6 +181,7 @@ class CardDatabse:
             image.save(folder_name + '/' + "{} ({}).jpg".format(file_name, i), "JPEG")
 
     def process_deck(self, add_border: bool = False):
+        self.logger.info(f"*****************Processing Deck at {self.deck_file}***********************")
         distinct_card_count = len(self.deck.get_result())
         missing_cards = []
         for card_id, _ in self.deck.get_result().items():
@@ -187,7 +191,7 @@ class CardDatabse:
                 if card_id_str not in self.database.index:
                     self.update_database()
                     if card_id_str not in self.database.index:
-                        print(f"Card with id {card_id_str} not found in database")
+                        self.logger.error(f"Card with id {card_id_str} not found in database")
                         yield (f"Card with id {card_id_str} not found in database", self.current_number_count)
                         missing_cards.append(card_id_str)
                         continue
@@ -202,7 +206,7 @@ class CardDatabse:
             if add_border:
                 image = self.add_border(image, border_size_mm=self.bleed_val)
 
-            print(f'[{self.current_number_count} card of {distinct_card_count} distinct cards]')
+            self.logger.info(f'[{self.current_number_count} card of {distinct_card_count} distinct cards]')
 
             self.current_number_count += 1
             image = image.convert('RGB')
@@ -222,6 +226,11 @@ class CardDatabse:
         self.remove_cards_images()
 
         yield ("Deck Done!", 0)
+        self.logger.info("****************Deck Done!******************")
+        # log process stats
+        self.logger.info(f"Cards Processed: {self.current_number_count}")
+        self.logger.info(f"Missing Cards Count: {len(missing_cards)}")
+        self.logger.info(f"Missing Cards: {missing_cards}")
     
     def proccess_extra_cards(self, add_border: bool):
         for file_name in self.extra_cards.get_deck():

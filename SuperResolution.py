@@ -2,9 +2,11 @@ import cv2
 import numpy as np
 import os
 import urllib.request
+from logger import Logger
 
 class SuperResolution:
     def __init__(self, scale_factor=2):
+        self.logger = Logger()
         self.scale_factor = scale_factor
         self.model_path = f"EDSR_x{scale_factor}.pb"
         self.model_url = self._get_model_url()
@@ -16,6 +18,7 @@ class SuperResolution:
         self.sr.setModel("edsr", scale_factor)
         
         print(f"EDSR x{scale_factor} model loaded successfully!")
+        self.logger.info(f"EDSR x{scale_factor} model loaded successfully!")
     
     def _get_model_url(self):
         """Get the download URL for EDSR model"""
@@ -26,11 +29,14 @@ class SuperResolution:
         """Download EDSR model if not exists"""
         if not os.path.exists(self.model_path):
             print(f"Downloading EDSR x{self.scale_factor} model...")
+            self.logger.info(f"Downloading EDSR x{self.scale_factor} model...")
             try:
                 urllib.request.urlretrieve(self.model_url, self.model_path)
                 print("Model downloaded successfully!")
+                self.logger.info("Model downloaded successfully!")
             except Exception as e:
                 print(f"Error downloading model: {e}")
+                self.logger.error(f"Error downloading model: {e}")
                 raise
     
     def preprocess_image(self, img):
@@ -56,20 +62,24 @@ class SuperResolution:
     def upscale_image(self, input_path, output_path):
         """Complete EDSR super resolution pipeline"""
         print(f"Processing Yu-Gi-Oh card: {input_path}")
+        self.logger.info(f"Processing Yu-Gi-Oh card: {input_path}")
         
         # Load image
         img = cv2.imread(input_path)
         if img is None:
+            self.logger.error(f"Could not load image: {input_path}")
             raise ValueError(f"Could not load image: {input_path}")
         
         original_shape = img.shape
         print(f"Original size: {original_shape[1]}x{original_shape[0]}")
+        self.logger.info(f"Original size: {original_shape[1]}x{original_shape[0]}")
         
         # Preprocess
         preprocessed = self.preprocess_image(img)
         
         # Apply EDSR super resolution
         print("Applying EDSR super resolution...")
+        self.logger.info("Applying EDSR super resolution...")
         upscaled = self.sr.upsample(preprocessed)
         
         # Post-process
@@ -81,4 +91,6 @@ class SuperResolution:
         
         final_shape = enhanced.shape
         print(f"Enhanced size: {final_shape[1]}x{final_shape[0]}")
+        self.logger.info(f"Enhanced size: {final_shape[1]}x{final_shape[0]}")
         print(f"Saved to: {output_path}")
+        self.logger.info(f"Saved to: {output_path}")

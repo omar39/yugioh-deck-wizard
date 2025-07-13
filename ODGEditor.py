@@ -2,6 +2,7 @@ import zipfile
 import xml.dom.minidom
 import os
 from ZipDeck import ZipDeck
+from logger import Logger
 
 class ODGEditor:
     doc = ""
@@ -15,6 +16,7 @@ class ODGEditor:
         """
         Open an ODG file.
         """
+        self.logger = Logger()
         self.create_path = create_path
         self.template_file = template_file
         self.back_sleeve = back_sleeve
@@ -46,7 +48,7 @@ class ODGEditor:
             new_page = page.cloneNode(True)
             new_page.setAttribute('draw:name', 'page' + str(i+2))
             self.doc.getElementsByTagName('office:drawing')[0].appendChild(new_page)
-        print(str(number_of_pages) + " page(s) have been added.")
+        self.logger.info(str(number_of_pages) + " page(s) have been added.")
 
     def create_new_doc(self):
         try:
@@ -59,16 +61,17 @@ class ODGEditor:
                             else:
                                 out_doc.writestr(s.filename, infile.read())
                     except KeyError as e:
-                        print(f"Error opening file {s.filename}: {e}")
+                        self.logger.error(f"Error opening file {s.filename}: {e}")
         except Exception as e:
-            print(f"Failed to create new document: {e}")
+            self.logger.error(f"Failed to create new document: {e}")
+            raise
 
     # Cleaned up the code by removing redundant 'out_doc.close()' as 'with' statement handles closing,
     # simplified string formatting using f-strings, and removed unnecessary 'try-except' blocks for 'KeyError' 
     # as 'zipfile.write()' does not raise KeyError.
     def copy_card_files(self):
         with zipfile.ZipFile(self.create_path + self.NEW_DECK_ODG, 'a') as out_doc:
-            print("copying cards...")
+            self.logger.info("copying cards...")
             for card in self.deck:
                 if os.path.exists(f"{self.create_path}/{card}.jpg"):
                     out_doc.write(f"{self.create_path}/{card}.jpg", f"Pictures/{card}.jpg")
@@ -82,7 +85,7 @@ class ODGEditor:
     
     def insert_cards(self):
         place_holders = self.doc.getElementsByTagName('draw:image')
-        print(len(place_holders))
+        self.logger.info(str(len(place_holders)) + " placeholders have been inserted.")
         XLINK_HREF = 'xlink:href'
         PICS_PATH = 'Pictures/'
 

@@ -13,6 +13,8 @@ Templates/
 YDK Files/
 Decks/
 small cards/
+logs/
+*.ico
 *.csv
 
 # Pytorch

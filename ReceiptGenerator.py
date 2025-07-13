@@ -24,7 +24,7 @@ class YugiohReceipt():
         return database
 
     def generate_receipt(self):
-        cards = dict()
+        cards = {}
         card_pricing = CardPricing()
         extra_cards_number = len(self.extra_cards.get_deck()) if self.extra_cards != None else 0
         normal_cards_number = sum(self.deck.get_result().values()) if self.deck != None else 0
@@ -33,7 +33,7 @@ class YugiohReceipt():
         print('Making the receipt....')
         if self.deck is not None:
             for id, count in self.deck.get_result().items():
-                card_name = self.database.at[id, 'name'] if id in self.database.index else 'Unknown Card'
+                card_name = self.database.at[id, 'name'] if id in self.database.index else 'Unknown Card with id {}'.format(id)
                 if card_name not in cards:
                     cards[card_name] = 0
                 cards[card_name] += count

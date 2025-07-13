@@ -5,7 +5,7 @@ class Reader:
         self.deck = self._process_file(file_name)
 
     def get_result(self):
-        return self.deck if self.deck != None else dict()
+        return self.deck if self.deck != None else {}
     def remove_card(self, card_id: str):
         self.deck.pop(card_id)
 

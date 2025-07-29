@@ -1,8 +1,16 @@
 import logging
 import os
-class  Logger:
-    instance = None
+class Logger:
+    _instance = None
+    def __new__(self):
+        if Logger._instance is None:
+            Logger._instance = super().__new__(self)
+            Logger._instance.__init__()
+        return Logger._instance
     def __init__(self):
+        if hasattr(self, 'initialized'):
+            return
+        self.initialized = True
         # Get a logger instance
         self.instance = logging.getLogger(__name__)
         self.instance.setLevel(logging.DEBUG)

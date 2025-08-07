@@ -175,17 +175,19 @@ class CardDatabse:
 
         return Image.open(image_path)
     
-    def add_border(self, image:Image, border_size_mm=int):
-        import cv2
-        im = np.array(image)
-        mm_to_pixel = 3.7795275591
+    def add_border(self, image:Image, border_size_mm:float):
+        if border_size_mm == 0:
+            return image
+        width, height = image.size
+        mm_to_pixel = width / 66
         border_size = math.ceil(mm_to_pixel * border_size_mm)
+        half_pixel = math.floor(mm_to_pixel / 2)
         border = cv2.copyMakeBorder(
-            im,
-            top=border_size,
-            bottom=border_size,
-            left=border_size,
-            right=border_size,
+            np.array(image),
+            top=border_size - half_pixel,
+            bottom=border_size - half_pixel,
+            left=border_size + half_pixel,
+            right=border_size + half_pixel,
             borderType=cv2.BORDER_REPLICATE,
             value=[200, 200, 200]
         )
@@ -270,7 +272,8 @@ class CardDatabse:
         Create a .odg file placing the file in 'folder_name', 
         adding cards in 'deck' and placing the desired sleeve (optional)
         '''
-        back = self.add_border(Image.open(self.back_sleeve), self.bleed_val)
+        
+        back = self.add_border(Image.open(self.back_sleeve), self.bleed_val) 
         back_path = self.out_folder + "/back.jpg"
         back = back.convert('RGB')
         back.save(back_path, "JPEG")

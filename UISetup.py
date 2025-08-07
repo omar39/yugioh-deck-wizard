@@ -132,7 +132,7 @@ class UISetup:
         else:                                   
             subprocess.call(('xdg-open', file_path))
     def _add_langs(self):
-        languages = ['en', 'ar', 'anime']
+        languages = ['en', 'ar', 'anime', 'rush']
         self._window.comboBox.addItems(languages)
     def _make_receipt(self):
         if not self._check_for_inputs():

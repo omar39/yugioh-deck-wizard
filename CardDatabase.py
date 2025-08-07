@@ -13,6 +13,8 @@ from ODGEditor import ODGEditor
 from ZipDeck import ZipDeck
 import csv
 from logger import Logger
+from template_to_card import CardRushify
+import cv2
 
 class CardDatabse:
     api = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
@@ -21,6 +23,7 @@ class CardDatabse:
     ENGLISH = 'en'
     ARABIC = 'ar'
     ANIME = 'anime'
+    RUSH = 'rush'
     database = pd.DataFrame()
     logger = Logger()
 
@@ -46,6 +49,8 @@ class CardDatabse:
            self.extra_cards = None
 
         self.number_of_distinct_cards = len(self.deck.get_result()) + len(self.extra_cards.get_deck()) if self.extra_cards != None else len(self.deck.get_result())
+
+        self.rushifier = CardRushify(os.path.join(self.database_folder, self.RUSH))
 
     def import_database(self):
         '''
@@ -82,7 +87,7 @@ class CardDatabse:
             return
         if response.status_code == 200:
             data = response.json()
-            df = pd.json_normalize(data['data'], record_path=['card_images'], meta=['name'])
+            df = pd.json_normalize(data['data'], record_path=['card_images'], meta=['name', 'frameType', 'type'])
             df = df.iloc[1:]
             df['upscaled_image'] = ""
             df = df.set_index('id')
@@ -95,6 +100,7 @@ class CardDatabse:
                     if i.endswith(".jpg"):
                         df.at[i.split(".jpg")[0], f"upscaled_image_{lang}"] = f"./Images Database/{lang}/" + i
             df.to_csv(database_filename)
+            self.database = df
     def get_image(self, id, lang):
         response_success = False
         image_lang = 'image_url_{}'.format(lang)
@@ -137,6 +143,16 @@ class CardDatabse:
             else:
                 self.logger.info("Anime card image not found.\nProccessing english version...")
                 return self.process_card(id, self.ENGLISH)
+        elif format == self.RUSH:
+            if f"{id}.jpg" in os.listdir(self.database_folder + "/" + format):
+                image_path = self.database_folder + self.format + "/" + id + ".jpg"
+            else:
+                self.logger.info(f"{format} card image not found.")
+                is_generated = self.rushifier.generate_card(id)
+                if is_generated:
+                    image_path = self.database_folder + self.format + "/" + id + ".jpg"
+                else:
+                    return self.process_card(id, self.ENGLISH)
         else:
             if id + ".jpg" not in os.listdir(self.database_folder + "/" + format):
                 self.logger.info(self.database.at[id, 'name'])
@@ -186,16 +202,15 @@ class CardDatabse:
         missing_cards = []
         for card_id, _ in self.deck.get_result().items():
             card_id_str = str(card_id)
-
             if self.format != self.ANIME:
                 if card_id_str not in self.database.index:
+                    self.logger.info(f"Card with id {card_id_str} not found in database\nUpdating database...")
                     self.update_database()
                     if card_id_str not in self.database.index:
                         self.logger.error(f"Card with id {card_id_str} not found in database")
                         yield (f"Card with id {card_id_str} not found in database", self.current_number_count)
                         missing_cards.append(card_id_str)
                         continue
-
                 card_name = self.database.at[card_id_str, 'name']
                 yield (f"Processing \"{card_name}\"", self.current_number_count)
             else:
